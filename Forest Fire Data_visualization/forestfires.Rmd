@@ -1,0 +1,92 @@
+# Load necessary libraries
+library(readr)
+library(dplyr)
+library(ggplot2)
+library(lubridate)
+
+# Load the dataset
+forestfires <- read_csv("forestfires.csv")
+
+# Take a look at the structure and the first few rows of the data
+glimpse(forestfires)
+head(forestfires)
+
+# Temperature (temp): Likely represents the temperature during the fire event.
+# Humidity (RH): Represents relative humidity.
+# Wind (wind): Wind speed during the fire event.
+# Rain (rain): Amount of rainfall.
+# FFMC, DMC, DC, ISI: Various indices used to measure forest fire risk based on weather conditions.
+# Month (month) and Day (day): Time of the year when the fire occurred.
+# Area (area): The area affected by the fire in hectares.
+
+# Convert month and day Variables into Categorical Variables
+# Convert 'month' to a categorical variable with correct order
+forestfires <- forestfires %>%
+  mutate(month = factor(month, levels = c("jan", "feb", "mar", "apr", "may", "jun", 
+                                          "jul", "aug", "sep", "oct", "nov", "dec"), 
+                        ordered = TRUE))
+
+# Convert 'day' to a categorical variable
+forestfires <- forestfires %>%
+  mutate(day = factor(day, levels = c("mon", "tue", "wed", "thu", "fri", "sat", "sun"), 
+                      ordered = TRUE))
+
+#Count the Number of Forest Fires by Month and Day
+# Count the number of forest fires by month
+fires_by_month <- forestfires %>%
+  group_by(month) %>%
+  summarize(count = n())
+
+# Count the number of forest fires by day of the week
+fires_by_day <- forestfires %>%
+  group_by(day) %>%
+  summarize(count = n())
+
+# Plot: Number of forest fires by month
+ggplot(fires_by_month, aes(x = month, y = count)) +
+  geom_bar(stat = "identity", fill = "orange") +
+  labs(title = "Number of Forest Fires by Month", x = "Month", y = "Number of Fires") +
+  theme_minimal()
+#When you set stat = "identity", you tell geom_bar() to use the actual values in your data for the heights of the bars rather than counting occurrences.
+#By default, geom_bar() uses stat = "count", which means that it automatically counts the number of occurrences of each category in the data and then creates bars with heights corresponding to these counts.
+# Plot: Number of forest fires by day of the week
+ggplot(fires_by_day, aes(x = day, y = count)) +
+  geom_bar(stat = "identity", fill = "blue") +
+  labs(title = "Number of Forest Fires by Day of the Week", x = "Day of the Week", y = "Number of Fires") +
+  theme_minimal()
+#create visualizations to examine how other variables (e.g., temperature, wind speed, humidity) relate to the month.
+
+# Pivot the dataset to a longer format for plotting
+library(tidyr)
+#To explore the relationship between the month and the various columns in the forestfires dataset
+forestfires_long <- forestfires %>%
+  pivot_longer(cols = c(FFMC, DMC, DC, ISI, temp, RH, wind, rain, area), 
+               names_to = "variable", values_to = "value")
+# Plot the relationship between month and various variables
+ggplot(forestfires_long, aes(x = month, y = value, color = variable)) +
+  geom_boxplot() +
+  facet_wrap(~variable, scales = "free_y") +
+  labs(title = "Monthly Variation of Different Variables in Forest Fires Dataset",
+       x = "Month", y = "Value") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+
+
+#To explore the relationship between various environmental variables and the area affected by forest fires, we can create scatter plots where area is plotted on the y-axis and the other variables (such as temperature, wind speed, humidity, etc.) are plotted on the x-axis. 
+forestfires_long <- forestfires %>%
+  pivot_longer(cols = c(FFMC, DMC, DC, ISI, temp, RH, wind, rain), 
+               names_to = "variable", values_to = "value")
+# Create scatter plots for each variable against area
+ggplot(forestfires_long, aes(x = value, y = area)) +
+  geom_point(alpha = 0.6, color = "blue") +
+  facet_wrap(~variable, scales = "free_x") +
+  labs(title = "Relationship Between Environmental Variables and Forest Fire Area",
+       x = "Value of Environmental Variable", y = "Area Burned (ha)") +
+  theme_minimal()
+
+# 
+# Use facet_wrap() when you want to compare plots across levels of a single variable.
+# Use facet_grid() when you want to explore interactions or compare across two dimensions (e.g., comparing variables by both month and day of the week).
+
+
