@@ -1,0 +1,126 @@
+library(readr)
+library(dplyr)
+# Import the combined.csv file
+combined_data <- read_csv("combined.csv")
+
+# View the first few rows to verify the import
+head(combined_data)
+
+# Import the masterfile11_gened_final.txt file (Importing the General Education Survey Data)
+gened_survey_data <- read_tsv("masterfile11_gened_final.txt")
+
+# View the first few rows to verify the import
+head(gened_survey_data)
+
+# Import the masterfile11_d75_final.txt file (Importing the District 75 Survey Data)
+d75_survey_data <- read_tsv("masterfile11_d75_final.txt")
+
+# View the first few rows to verify the import
+head(d75_survey_data)
+
+
+# Important Variables to Keep: ( Identify and Retain Essential Variables)
+#   dbn: To join with the combined dataframe.
+# schooltype: To filter for high schools.
+# Aggregate Scores: Variables such as saf_p_11 (safety and respect), com_s_11 (engagement), and other similar aggregate scores.
+
+#select only the columns we need and then filter the dataframe to include only high schools
+# Simplify the general education survey dataframe
+gened_survey_simplified <- gened_survey_data %>%
+  select(dbn, schooltype, saf_p_11, com_s_11, aca_p_11, eng_p_11) %>%  # Select relevant columns
+  filter(schooltype == "High School")  # Retain only high schools
+
+# View the simplified dataframe
+head(gened_survey_simplified)
+
+# Combine the general education and District 75 survey dataframes
+combined_survey_data <- bind_rows(gened_survey_data, d75_survey_data)
+# View the combined survey dataframe
+head(combined_survey_data)
+
+# Check column names
+colnames(combined_survey_data)
+colnames(combined_data)
+
+# If the column names are not consistent, rename them
+# Assuming both dataframes have `dbn` as the key but need renaming
+combined_survey_data$dbn
+combined_data$DBN
+
+combined_survey_data <- combined_survey_data %>%
+  rename(DBN = dbn)
+
+# View the first few rows to verify the key exists
+head(combined_survey_data$dbn)
+head(combined_data$dbn)
+
+# Perform the join
+final_combined_data <- left_join(combined_data, combined_survey_data, by = "DBN")
+
+# View the first few rows of the final combined dataframe
+head(final_combined_data)
+
+
+# Load necessary libraries
+#library(dplyr)
+library(ggplot2)
+library(tidyr)
+library(corrplot)
+library(purrr)
+
+# Create the correlation matrix
+correlation_matrix <- final_combined_data %>% 
+  select(avg_sat_score, saf_p_11:aca_tot_11) %>%
+  cor(use = 'pairwise.complete.obs')
+correlation_tibble <- correlation_matrix %>% as_tibble(rownames = 'variable')
+# View the correlation matrix
+print(correlation_matrix)
+
+
+# Convert the correlation matrix to a tibble for easier filtering
+correlation_strong <- as.data.frame(correlation_tibble) %>%
+  select(variable, avg_sat_score) %>%
+  filter(avg_sat_score > 0.25 | avg_sat_score < -0.25) %>%
+  arrange(desc(abs(avg_sat_score)))
+
+# View the filtered correlation tibble
+print(correlation_strong)
+
+
+# Create scatter plots for each pair of highly correlated variables
+create_scatter <- function(x, y) {     
+  ggplot(data = final_combined_data) + 
+    aes_string(x = x, y = y) +
+    geom_point(alpha = 0.3) +
+    theme(panel.background = element_rect(fill = "white"))
+}
+x_var <- correlation_strong$variable[2:5]
+y_var <- "avg_sat_score"
+
+map2(x_var, y_var, create_scatter)
+#Reshape the data so that you can investigate differences in student, parent, and teacher responses to survey questions.
+library(stringr)
+combined_survey_gather <- final_combined_data %>%
+  pivot_longer(cols = saf_p_11:aca_tot_11,
+               names_to = "survey_question",
+               values_to = "score")
+
+#Use `str_sub()` to create new variables, `response_type` and `question`, from the `survey_question` variable.
+combined_survey_gather <- combined_survey_gather %>%
+  mutate(response_type = str_sub(survey_question, 4, 6)) %>%   
+  mutate(question = str_sub(survey_question, 1, 3))
+#Replace `response_type` variable values with names "parent", "teacher", "student", "total" using `if_else()` function.
+combined_survey_gather <- combined_survey_gather %>%
+  mutate(response_type = ifelse(response_type  == "_p_", "parent", 
+                                ifelse(response_type == "_t_", "teacher",
+                                       ifelse(response_type == "_s_", "student", 
+                                              ifelse(response_type == "_to", "total", "NA")))))
+
+#Make a boxplot to see if there appear to be differences in how the three groups of responders (parents, students, and teachers) answered the four questions. 
+combined_survey_gather %>%
+  filter(response_type != "total") %>%
+  ggplot(aes(x = question, y = score, fill = response_type)) +
+  geom_boxplot()
+
+
+
