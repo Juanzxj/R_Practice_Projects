@@ -1,3 +1,15 @@
+---
+title: "Data_Cleaning_NYC_Schools"
+author: "Juan"
+date: "2024-08-24"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
 library(readr)
 library(dplyr)
 # Import the combined.csv file
@@ -5,20 +17,22 @@ combined_data <- read_csv("combined.csv")
 
 # View the first few rows to verify the import
 head(combined_data)
-
+```
+```{r}
 # Import the masterfile11_gened_final.txt file (Importing the General Education Survey Data)
 gened_survey_data <- read_tsv("masterfile11_gened_final.txt")
 
 # View the first few rows to verify the import
 head(gened_survey_data)
-
+```
+```{r}
 # Import the masterfile11_d75_final.txt file (Importing the District 75 Survey Data)
 d75_survey_data <- read_tsv("masterfile11_d75_final.txt")
 
 # View the first few rows to verify the import
 head(d75_survey_data)
-
-
+```
+```{r}
 # Important Variables to Keep: ( Identify and Retain Essential Variables)
 #   dbn: To join with the combined dataframe.
 # schooltype: To filter for high schools.
@@ -29,38 +43,46 @@ head(d75_survey_data)
 gened_survey_simplified <- gened_survey_data %>%
   select(dbn, schooltype, saf_p_11, com_s_11, aca_p_11, eng_p_11) %>%  # Select relevant columns
   filter(schooltype == "High School")  # Retain only high schools
-
 # View the simplified dataframe
 head(gened_survey_simplified)
-
+```
+```{r}
 # Combine the general education and District 75 survey dataframes
 combined_survey_data <- bind_rows(gened_survey_data, d75_survey_data)
 # View the combined survey dataframe
 head(combined_survey_data)
-
+```
+```{r}
 # Check column names
 colnames(combined_survey_data)
+```
+```{r}
+# Check column names
 colnames(combined_data)
-
+```
+```{r}
 # If the column names are not consistent, rename them
 # Assuming both dataframes have `dbn` as the key but need renaming
 combined_survey_data$dbn
 combined_data$DBN
+```
 
+```{r}
 combined_survey_data <- combined_survey_data %>%
   rename(DBN = dbn)
 
 # View the first few rows to verify the key exists
 head(combined_survey_data$dbn)
 head(combined_data$dbn)
-
+```
+```{r}
 # Perform the join
 final_combined_data <- left_join(combined_data, combined_survey_data, by = "DBN")
 
 # View the first few rows of the final combined dataframe
 head(final_combined_data)
-
-
+```
+```{r}
 # Load necessary libraries
 #library(dplyr)
 library(ggplot2)
@@ -75,8 +97,9 @@ correlation_matrix <- final_combined_data %>%
 correlation_tibble <- correlation_matrix %>% as_tibble(rownames = 'variable')
 # View the correlation matrix
 print(correlation_matrix)
+```
 
-
+```{r}
 # Convert the correlation matrix to a tibble for easier filtering
 correlation_strong <- as.data.frame(correlation_tibble) %>%
   select(variable, avg_sat_score) %>%
@@ -85,8 +108,8 @@ correlation_strong <- as.data.frame(correlation_tibble) %>%
 
 # View the filtered correlation tibble
 print(correlation_strong)
-
-
+```
+```{r}
 # Create scatter plots for each pair of highly correlated variables
 create_scatter <- function(x, y) {     
   ggplot(data = final_combined_data) + 
@@ -98,6 +121,8 @@ x_var <- correlation_strong$variable[2:5]
 y_var <- "avg_sat_score"
 
 map2(x_var, y_var, create_scatter)
+```
+```{r}
 #Reshape the data so that you can investigate differences in student, parent, and teacher responses to survey questions.
 library(stringr)
 combined_survey_gather <- final_combined_data %>%
@@ -121,6 +146,13 @@ combined_survey_gather %>%
   filter(response_type != "total") %>%
   ggplot(aes(x = question, y = score, fill = response_type)) +
   geom_boxplot()
+
+```
+
+
+
+
+
 
 
 
