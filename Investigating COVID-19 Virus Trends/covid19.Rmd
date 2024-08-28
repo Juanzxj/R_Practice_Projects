@@ -1,3 +1,15 @@
+---
+title: "covid19"
+author: "Juan"
+date: "2024-08-23"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
 # Load necessary libraries
 library(readr)
 library(tibble)
@@ -8,7 +20,8 @@ covid_df <- read_csv("covid19.csv")
 
 # Determine the dimension of the dataframe
 dim(covid_df)
-
+```
+```{r}
 # Determine the column names of the dataframe
 vector_cols <- colnames(covid_df)
 print(vector_cols)
@@ -18,28 +31,24 @@ class(vector_cols)  # It represents a character vector.
 
 # Display the first few rows of the dataframe
 head(covid_df)
-
+```
+```{r}
 # Display the summary of the dataframe
 glimpse(covid_df)
+```
 
-# Why is glimpse() useful?
-# Glimpse is useful because it provides a quick and compact overview of the dataset,
-# including the data types and a preview of the values in each column, which helps
-# in understanding the structure of the dataset quickly.
-
+```{r}
 # Filter the rows related to "All States" and remove the Province_State column
 covid_df_all_states <- covid_df %>%
   filter(Province_State == "All States") %>%
   select(-Province_State)
 
-# Why can we remove the Province_State column without losing information?
-# Since we've filtered the data to include only "All States", the Province_State column
-# would now only contain a single value ("All States") across all rows, making it redundant.
-
 # Select specific columns related to daily measures
 covid_df_all_states_daily <- covid_df_all_states %>%
   select(Date, Country_Region, active, hospitalizedCurr, daily_tested, daily_positive)
+```
 
+```{r}
 # Summarize the data by Country_Region
 covid_df_all_states_daily_sum <- covid_df_all_states_daily %>%
   group_by(Country_Region) %>%
@@ -53,11 +62,13 @@ covid_df_all_states_daily_sum <- covid_df_all_states_daily %>%
 
 # Display the summarized dataframe
 print(covid_df_all_states_daily_sum)
-
+```
+```{r}
 # Extract the top ten rows
 covid_top_10 <- head(covid_df_all_states_daily_sum, 10)
 print(covid_top_10)
-
+```
+```{r}
 # Create vectors from the top 10 dataframe
 countries <- covid_top_10$Country_Region
 tested_cases <- covid_top_10$tested
@@ -70,12 +81,20 @@ names(tested_cases) <- countries
 names(positive_cases) <- countries
 names(active_cases) <- countries
 names(hospitalized_cases) <- countries
+```
 
+```{r}
 # Identify the top three positive against tested cases
 positive_tested_ratio <- positive_cases / tested_cases
+positive_tested_ratio
+```
+
+```{r}
 positive_tested_top_3 <- sort(positive_tested_ratio, decreasing = TRUE)[1:3]
 print(positive_tested_top_3)
+```
 
+```{r}
 # Create vectors for specific countries
 united_kingdom <- c(0.11, 1473672, 166909, 0, 0)
 united_states <- c(0.10, 17282363, 1877179, 0, 0)
@@ -87,7 +106,9 @@ colnames(covid_mat) <- c("Ratio", "tested", "positive", "active", "hospitalized"
 
 # Display the matrix
 print(covid_mat)
+```
 
+```{r}
 # Create a question and answer
 question <- "Which countries have had the highest number of positive cases against the number of tests?"
 answer <- c("Positive tested cases" = positive_tested_top_3)
@@ -102,14 +123,15 @@ vectors_list <- list(
   active_cases = active_cases,
   hospitalized_cases = hospitalized_cases
 )
+```
 
+```{r}
 # Combine all lists into a named list
 data_structure_list <- list(
   dataframes = dataframes_list,
   matrices = matrices_list,
   vectors = vectors_list
 )
-
 # Create a final list containing everything
 covid_analysis_list <- list(
   question = question,
@@ -119,3 +141,9 @@ covid_analysis_list <- list(
 
 # Display the second element of this list
 print(covid_analysis_list[[2]])
+```
+
+
+
+
+
